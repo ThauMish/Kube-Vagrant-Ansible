@@ -84,6 +84,16 @@
       line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
       create: yes
 
+  - name: Remove config.toml
+    file:
+      path: /etc/containerd/config.toml
+      state: absent
+      
+  - name: Restart containerd
+    systemd:
+      name: containerd
+      state: restarted
+
   - name: Restart kubelet
     service:
       name: kubelet

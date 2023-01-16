@@ -83,7 +83,27 @@
       path: /etc/default/kubelet
       line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
       create: yes
-
+      
+  - name: Create /etc/docker directory
+    file:
+      path: /etc/docker
+      state: directory
+      mode: 0755
+      
+  - name: Create daemon.json
+    lineinfile:
+      dest: /etc/docker/daemon.json
+      line: '{ "exec-opts": ["native.cgroupdriver=systemd"], "log-driver": "json-file", "log-opts": { "max-size": "100m" }, "storage-driver": "overlay2" }'
+      
+  - name: Enable and restart Docker
+    systemd:
+      name: docker
+      state: started
+      enabled: yes
+      
+  - name: Reload systemd
+    command: systemctl daemon-reload
+    
   - name: Restart kubelet
     service:
       name: kubelet

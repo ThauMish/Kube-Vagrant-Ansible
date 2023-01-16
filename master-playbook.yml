@@ -2,7 +2,7 @@
 - hosts: all
   become: true
   tasks:
-  - name: Install packages that allow apt to be used over HTTPS
+  - name: Install necessary packages
     apt:
       name: "{{ packages }}"
       state: present
@@ -12,36 +12,18 @@
       - apt-transport-https
       - ca-certificates
       - curl
-      - gnupg-agent
-      - software-properties-common
+      - software-properties-common 
+      - gnupg2
+      - net-tools
 
-  - name: Add an apt signing key for Docker
-    apt_key:
-      url: https://download.docker.com/linux/ubuntu/gpg
-      state: present
-
-  - name: Add apt repository for stable version
-    apt_repository:
-      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
-      state: present
-
-  - name: Install docker and its dependecies
+  - name: Install containerd
     apt: 
       name: "{{ packages }}"
       state: present
       update_cache: yes
     vars:
       packages:
-      - docker-ce 
-      - docker-ce-cli 
-      - containerd.io
-    notify:
-      - docker status
-
-  - name: Add kube user to docker group
-    user:
-      name: kube
-      group: docker
+      - containerd
 
   - name: Remove swapfile from /etc/fstab
     mount:
@@ -74,73 +56,85 @@
       update_cache: yes
     vars:
       packages:
-        - kubelet 
-        - kubeadm 
-        - kubectl
+        - kubelet=1.23.0-00
+        - kubeadm=1.23.0-00
+        - kubectl=1.23.0-00
 
-  - name: Configure node ip
-    lineinfile:
-      path: /etc/default/kubelet
-      line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
-      create: yes
-      
-  - name: Create /etc/docker directory
-    file:
-      path: /etc/docker
-      state: directory
-      mode: 0755
-      
-  - name: Create daemon.json
-    lineinfile:
-      dest: /etc/docker/daemon.json
-      line: '{ "exec-opts": ["native.cgroupdriver=systemd"], "log-driver": "json-file", "log-opts": { "max-size": "100m" }, "storage-driver": "overlay2" }'
-      
-  - name: Enable and restart Docker
-    systemd:
-      name: docker
-      state: started
-      enabled: yes
-      
-  - name: Reload systemd
-    command: systemctl daemon-reload
-    
-  - name: Restart kubelet
-    service:
-      name: kubelet
-      daemon_reload: yes
-      state: restarted
+  - name: Configure containerd
+    blockinfile:
+      create: true
+      path: /etc/modules-load.d/containerd.conf
+      block: |
+        overlay
+        br_netfilter
 
-  - name: Remove config.toml
-    file:
-      path: /etc/containerd/config.toml
-      state: absent
-      
-  - name: Restart containerd
-    systemd:
-      name: containerd
-      state: restarted
+  - name: Enable kernel modules
+    shell: |
+      modprobe overlay
+      modprobe br_netfilter
+
+  - name: Configure IP forwarding and iptables
+    blockinfile:
+      create: true
+      path: /etc/sysctl.conf
+      block: |
+        net.bridge.bridge-nf-call-iptables = 1
+        net.ipv4.ip_forward = 1
+
+  - name: Persist changes
+    command: sysctl -p
+
+  - name: Get IP eno1 addr
+    shell: ifconfig eno1 | grep 'inet' | cut -d{{':'}} -f2 | awk '{ print $2 }'
+    register: output
+
+  - name: Configure kubelet
+    lineinfile:
+      path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+      line: Environment="KUBELET_EXTRA_ARGS=--node-ip={{ output.stdout }}
 
   - name: Initialize the Kubernetes cluster using kubeadm
-    command: kubeadm init --apiserver-advertise-address="192.168.31.100" --apiserver-cert-extra-sans="192.168.31.100"  --node-name k8s-master --pod-network-cidr=192.168.31.0/24
+    command: kubeadm init --apiserver-advertise-address="192.168.31.100" --apiserver-cert-extra-sans="192.168.31.100" --pod-network-cidr=176.16.0.0/16
 
-  - name: Setup kubeconfig for kube user
-    command: "{{ item }}"
-    with_items:
-     - mkdir -p /home/kube/.kube
-     - cp -i /etc/kubernetes/admin.conf /home/kube/.kube/config
-     - chown kube:kube /home/kube/.kube/config
+  - name: Create kube directory
+    file:
+      path: /home/vagrant/.kube
+      state: directory
 
-  - name: Install calico pod network
+  - name: Setup kubeconfig for vagrant user
+    copy:
+      src: /etc/kubernetes/admin.conf
+      dest: /home/vagrant/.kube/config
+      remote_src: yes
+      owner: vagrant
+      group: vagrant
+      mode: '0644'
+
+  - name: Download calico.conf
+    get_url:
+      url: https://docs.projectcalico.org/v3.20/manifests/calico.yaml
+      dest: /home/vagrant/calico.yaml
+
+  - name: Add pod config to calico.yaml
+    lineinfile:
+      dest: /home/vagrant/calico.yaml
+      regexp: '^\s{12}#\s*- name: CALICO_IPV4POOL_CIDR.*$'
+      line: '            - name: CALICO_IPV4POOL_CIDR'
+
+  - name: Add pod config to calico.yaml
+    lineinfile:
+      dest: /home/vagrant/calico.yaml
+      regexp: '^\s{12}#\s*  value: "192.168.0.0\/16".*$'
+      line: '              value: "172.16.0.0/16"'
+
+  - name: Install calico CNI
     become: false
-    command: kubectl create -f https://docs.projectcalico.org/v3.4/getting-started/kubernetes/installation/hosted/calico.yaml
+    command: kubectl create -f calico.yaml
 
   - name: Generate join command
     command: kubeadm token create --print-join-command
     register: join_command
 
   - name: Copy join command to local file
+    become: false
     local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
-
-  handlers:
-    - name: docker status
-      service: name=docker state=started

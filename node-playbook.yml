@@ -17,22 +17,22 @@
       - net-tools
 
   - name: Add Docker's official GPG key
-    apt_key:
-      url: https://download.docker.com/linux/debian/gpg
-      state: present
-      
-  - name: Verify fingerprint
-    shell: apt-key fingerprint 0EBFCD88
-
+    shell: mkdir -p /etc/apt/keyrings
+  
+  - name: Add gpg key docker
+    shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    
   - name: Add Docker's official repository
     lineinfile:
       path: /etc/apt/sources.list.d/docker.list
-      line: deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+      line: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu bionic stable
       state: present
+      create: yes
 
   - name: Update package lists
     apt:
       update_cache: yes
+
   - name: Install containerd.io
     apt:
       name: containerd.io

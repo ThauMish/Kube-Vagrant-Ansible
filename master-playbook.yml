@@ -17,22 +17,22 @@
       - net-tools
 
   - name: Add Docker's official GPG key
-    apt_key:
-      url: https://download.docker.com/linux/debian/gpg
-      state: present
-      
-  - name: Verify fingerprint
-    shell: apt-key fingerprint 0EBFCD88
-
+    shell: mkdir -p /etc/apt/keyrings
+  
+  - name: Add gpg key docker
+    shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    
   - name: Add Docker's official repository
     lineinfile:
       path: /etc/apt/sources.list.d/docker.list
-      line: deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+      line: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu bionic stable
       state: present
+      create: yes
 
   - name: Update package lists
     apt:
       update_cache: yes
+
   - name: Install containerd.io
     apt:
       name: containerd.io
@@ -76,7 +76,7 @@
       state: present
       filename: kubernetes.list
 
-  - name: Install Kubernetes binaries
+  - name: Install Kubernetesbinaries
     apt: 
       name: "{{ packages }}"
       state: present
@@ -137,26 +137,26 @@
       group: vagrant
       mode: '0644'
 
-  - name: Download calico.conf
-    get_url:
-      url: https://docs.projectcalico.org/v3.20/manifests/calico.yaml
-      dest: /home/vagrant/calico.yaml
+      #- name: Download calico.conf
+      #get_url:
+      #url: https://docs.projectcalico.org/v3.20/manifests/calico.yaml
+      #dest: /home/vagrant/calico.yaml
 
-  - name: Add pod config to calico.yaml
-    lineinfile:
-      dest: /home/vagrant/calico.yaml
-      regexp: '^\s{12}#\s*- name: CALICO_IPV4POOL_CIDR.*$'
-      line: '            - name: CALICO_IPV4POOL_CIDR'
+      #- name: Add pod config to calico.yaml
+      #lineinfile:
+      #dest: /home/vagrant/calico.yaml
+      #regexp: '^\s{12}#\s*- name: CALICO_IPV4POOL_CIDR.*$'
+      #line: '            - name: CALICO_IPV4POOL_CIDR'
 
-  - name: Add pod config to calico.yaml
-    lineinfile:
-      dest: /home/vagrant/calico.yaml
-      regexp: '^\s{12}#\s*  value: "192.168.0.0\/16".*$'
-      line: '              value: "172.16.0.0/16"'
+      #- name: Add pod config to calico.yaml
+      #lineinfile:
+      #dest: /home/vagrant/calico.yaml
+      #regexp: '^\s{12}#\s*  value: "192.168.0.0\/16".*$'
+      #line: '              value: "172.16.0.0/16"'
 
   - name: Install calico CNI
     become: false
-    command: kubectl create -f calico.yaml
+    command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
 
   - name: Generate join command
     command: kubeadm token create --print-join-command

@@ -20,6 +20,9 @@
     file:
       path: /etc/apt/keyrings
       state: directory
+
+  - name: Verify fingerprint
+    shell: apt-key fingerprint 0EBFCD88
   
   - name: Download and save Docker's official GPG key
     get_url:

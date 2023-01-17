@@ -17,10 +17,17 @@
       - net-tools
 
   - name: Add Docker's official GPG key
-    shell: mkdir -p /etc/apt/keyrings
+    file:
+      path: /etc/apt/keyrings
+      state: directory
   
-  - name: Add gpg key docker
-    shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+   - name: Download and save Docker's official GPG key
+     get_url:
+       url: https://download.docker.com/linux/ubuntu/gpg
+       dest: /etc/apt/keyrings/docker.gpg
+       mode: 0644
+       validate_certs: yes
+       force: yes
     
   - name: Add Docker's official repository
     lineinfile:
@@ -39,13 +46,19 @@
       state: present
       
   - name: Backup containerd config
-    shell: mv /etc/containerd/config.toml /etc/containerd/config.toml.bak
+    copy:
+      src: /etc/containerd/config.toml
+      dest: /etc/containerd/config.toml.bak
     
   - name: Generate new containerd config
-    shell: containerd config default > /etc/containerd/config.toml
+    command: containerd config default > /etc/containerd/config.toml
     
   - name: Enable SystemdCgroup
-    shell: sed -i "s/SystemdCgroup = false/SystemdCgroup = true/" /etc/containerd/config.toml
+    lineinfile:
+      path: /etc/containerd/config.toml
+      line: SystemdCgroup = true
+      state: present
+      regexp: "^SystemdCgroup = false$"
     
   - name: Restart containerd
     systemd:
@@ -136,23 +149,6 @@
       owner: vagrant
       group: vagrant
       mode: '0644'
-
-      #- name: Download calico.conf
-      #get_url:
-      #url: https://docs.projectcalico.org/v3.20/manifests/calico.yaml
-      #dest: /home/vagrant/calico.yaml
-
-      #- name: Add pod config to calico.yaml
-      #lineinfile:
-      #dest: /home/vagrant/calico.yaml
-      #regexp: '^\s{12}#\s*- name: CALICO_IPV4POOL_CIDR.*$'
-      #line: '            - name: CALICO_IPV4POOL_CIDR'
-
-      #- name: Add pod config to calico.yaml
-      #lineinfile:
-      #dest: /home/vagrant/calico.yaml
-      #regexp: '^\s{12}#\s*  value: "192.168.0.0\/16".*$'
-      #line: '              value: "172.16.0.0/16"'
 
   - name: Install calico CNI
     become: false

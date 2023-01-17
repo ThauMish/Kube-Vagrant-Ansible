@@ -16,10 +16,10 @@
       - gnupg2
       - net-tools
 
-  - name: Add Docker's official GPG key
-    file:
-      path: /etc/apt/keyrings
-      state: directory
+   - name: Add Docker's official GPG key
+     file:
+       path: /etc/apt/keyrings
+       state: directory
   
    - name: Download and save Docker's official GPG key
      get_url:

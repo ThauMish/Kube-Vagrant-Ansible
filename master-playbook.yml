@@ -21,13 +21,13 @@
       path: /etc/apt/keyrings
       state: directory
   
-   - name: Download and save Docker's official GPG key
-     get_url:
-       url: https://download.docker.com/linux/ubuntu/gpg
-       dest: /etc/apt/keyrings/docker.gpg
-       mode: 0644
-       validate_certs: yes
-       force: yes
+  - name: Download and save Docker's official GPG key
+    get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/keyrings/docker.gpg
+      mode: 0644
+      validate_certs: yes
+      force: yes
     
   - name: Add Docker's official repository
     lineinfile:

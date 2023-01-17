@@ -16,15 +16,42 @@
       - gnupg2
       - net-tools
 
-  - name: Install containerd
-    apt: 
-      name: "{{ packages }}"
+  - name: Add Docker's official GPG key
+    apt_key:
+      url: https://download.docker.com/linux/debian/gpg
       state: present
-      update_cache: yes
-    vars:
-      packages:
-      - containerd
+      
+  - name: Verify fingerprint
+    shell: apt-key fingerprint 0EBFCD88
 
+  - name: Add Docker's official repository
+    lineinfile:
+      path: /etc/apt/sources.list.d/docker.list
+      line: deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable
+      state: present
+
+  - name: Update package lists
+    apt:
+      update_cache: yes
+  - name: Install containerd.io
+    apt:
+      name: containerd.io
+      state: present
+      
+  - name: Backup containerd config
+    shell: mv /etc/containerd/config.toml /etc/containerd/config.toml.bak
+    
+  - name: Generate new containerd config
+    shell: containerd config default > /etc/containerd/config.toml
+    
+  - name: Enable SystemdCgroup
+    shell: sed -i "s/SystemdCgroup = false/SystemdCgroup = true/" /etc/containerd/config.toml
+    
+  - name: Restart containerd
+    systemd:
+      name: containerd
+      state: restarted
+  
   - name: Remove swapfile from /etc/fstab
     mount:
       name: "{{ item }}"
@@ -56,9 +83,9 @@
       update_cache: yes
     vars:
       packages:
-        - kubelet=1.23.0-00
-        - kubeadm=1.23.0-00
-        - kubectl=1.23.0-00
+        - kubelet=1.26.0-00
+        - kubeadm=1.26.0-00
+        - kubectl=1.26.0-00
 
   - name: Configure containerd
     blockinfile:

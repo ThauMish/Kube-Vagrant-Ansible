@@ -23,7 +23,8 @@
 
   - name: Verify fingerprint
     shell: apt-key fingerprint 0EBFCD88
-  
+    ignore_errors: "{{ docker_apt_ignore_key_error }}"
+ 
   - name: Download and save Docker's official GPG key
     get_url:
       url: https://download.docker.com/linux/ubuntu/gpg

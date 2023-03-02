@@ -16,29 +16,15 @@
       - gnupg2
       - net-tools
 
-  - name: Add Docker's official GPG key
-    file:
-      path: /etc/apt/keyrings
-      state: directory
-
-  - name: Verify fingerprint
-    shell: apt-key fingerprint 0EBFCD88
-    ignore_errors: "{{ docker_apt_ignore_key_error }}"
- 
-  - name: Download and save Docker's official GPG key
-    get_url:
+  - name: add GPG key
+    apt_key:
       url: https://download.docker.com/linux/ubuntu/gpg
-      dest: /etc/apt/keyrings/docker.gpg
-      mode: 0644
-      validate_certs: yes
-      force: yes
-    
-  - name: Add Docker's official repository
-    lineinfile:
-      path: /etc/apt/sources.list.d/docker.list
-      line: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu bionic stable
       state: present
-      create: yes
+  
+  - name: add docker repository to apt
+    apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu bionic stable
+      state: present
 
   - name: Update package lists
     apt:
@@ -46,7 +32,7 @@
 
   - name: Install containerd.io
     apt:
-      name: containerd.io
+      name: containerd.io=1.6.18-1
       state: present
       
   - name: Backup containerd config
@@ -57,18 +43,16 @@
   - name: Generate new containerd config
     command: containerd config default > /etc/containerd/config.toml
     
-  - name: Enable SystemdCgroup
-    lineinfile:
+  - name: Supprimer le fichier de configuration de Containerd
+    file:
       path: /etc/containerd/config.toml
-      line: SystemdCgroup = true
-      state: present
-      regexp: "^SystemdCgroup = false$"
-    
+      state: absent
+
   - name: Restart containerd
     systemd:
       name: containerd
       state: restarted
-  
+      
   - name: Remove swapfile from /etc/fstab
     mount:
       name: "{{ item }}"
@@ -93,7 +77,7 @@
       state: present
       filename: kubernetes.list
 
-  - name: Install Kubernetesbinaries
+  - name: Install Kubernetes binaries
     apt: 
       name: "{{ packages }}"
       state: present
@@ -138,7 +122,7 @@
       line: Environment="KUBELET_EXTRA_ARGS=--node-ip={{ output.stdout }}
 
   - name: Initialize the Kubernetes cluster using kubeadm
-    command: kubeadm init --apiserver-advertise-address="192.168.31.100" --apiserver-cert-extra-sans="192.168.31.100" --pod-network-cidr=176.16.0.0/16
+    command: kubeadm init --apiserver-advertise-address="192.168.31.200" --apiserver-cert-extra-sans="192.168.31.200" --pod-network-cidr=176.16.0.0/16
 
   - name: Create kube directory
     file:
@@ -153,6 +137,11 @@
       owner: vagrant
       group: vagrant
       mode: '0644'
+  
+
+  - name: Install tigera
+    become: false
+    command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/tigera-operator.yaml
 
   - name: Install calico CNI
     become: false
@@ -165,3 +154,4 @@
   - name: Copy join command to local file
     become: false
     local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
+

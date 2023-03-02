@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
         master.vm.provider "virtualbox" do |v|
             v.memory = 2048
             v.cpus = 2
-            v.disksize = 30 * 1024 # for master, 30GB
+            v.customize ["modifyvm", :id, "--resize", "30000"] # for master, 30GB
         end
         master.vm.provision "ansible" do |ansible|
             ansible.playbook = "master-playbook.yml"
@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
             node.vm.provider "virtualbox" do |v|
                 v.memory = 2048
                 v.cpus = 2
-                v.disksize = 20 * 1024 # for nodes, 20GB
+                v.customize ["modifyvm", :id, "--resize", "20000"] # for nodes, 20GB
             end
             node.vm.provision "ansible" do |ansible|
                 ansible.playbook = "node-playbook.yml"

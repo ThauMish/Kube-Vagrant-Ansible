@@ -36,14 +36,11 @@
       state: present
       
   - name: Backup containerd config
-    copy:
+    ansible.builtin.copy:
       src: /etc/containerd/config.toml
       dest: /etc/containerd/config.toml.bak
     
-  - name: Generate new containerd config
-    command: containerd config default > /etc/containerd/config.toml
-    
-  - name: Supprimer le fichier de configuration de Containerd
+  - name: Remove containerd config file
     file:
       path: /etc/containerd/config.toml
       state: absent
@@ -78,15 +75,15 @@
       filename: kubernetes.list
 
   - name: Install Kubernetes binaries
-    apt: 
+    apt:
       name: "{{ packages }}"
       state: present
       update_cache: yes
     vars:
       packages:
-        - kubelet=1.26.0-00
-        - kubeadm=1.26.0-00
-        - kubectl=1.26.0-00
+        - kubelet=1.27.0-00
+        - kubeadm=1.27.0-00
+        - kubectl=1.27.0-00
 
   - name: Configure containerd
     blockinfile:

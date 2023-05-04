@@ -9,6 +9,16 @@
    - name: Make the Swap inactive
      command: swapoff -a
 
+   - name: Stop AppArmor service
+     systemd:
+       name: apparmor
+       state: stopped
+
+   - name: Disable AppArmor service
+     systemd:
+       name: apparmor
+       enabled: no
+
    - name: Remove Swap entry from /etc/fstab.
      lineinfile:
        dest: /etc/fstab

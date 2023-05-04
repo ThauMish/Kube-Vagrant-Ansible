@@ -1,1 +1,0 @@
-kubeadm join 192.168.31.200:6443 --token kjanp4.krlf7sjbuapaw3v9 --discovery-token-ca-cert-hash sha256:89e6cb302b3fa6c1f7f3dbc66767f7bfb36455e66433483574bd36176c214269 

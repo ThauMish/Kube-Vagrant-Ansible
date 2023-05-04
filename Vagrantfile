@@ -1,5 +1,5 @@
 IMAGE_NAME = "bento/ubuntu-20.04"
-N = 3
+N = 2
 
 Vagrant.configure("2") do |config|
     config.ssh.insert_key = true
@@ -23,7 +23,7 @@ Vagrant.configure("2") do |config|
     (1..N).each do |i|
         config.vm.define "node-#{i}" do |node|
             node.vm.box = IMAGE_NAME
-            node.vm.network "public_network", bridge: "enp59s0", ip: "192.168.31.#{i + 201}"
+    node.vm.network "public_network", bridge: "enp59s0", ip: "192.168.31.#{201 + i + 0}"
             node.vm.hostname = "node-#{i}"
             node.vm.provider "virtualbox" do |v|
                 v.memory = 2048

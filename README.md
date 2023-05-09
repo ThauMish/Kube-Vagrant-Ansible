@@ -23,16 +23,15 @@ The script generates an SSH key pair if it does not exist and automatically adds
 
 1.  Clone the repository:
     
-    ```
-    bashgit clone https://github.com/username/Kube-Vagrant-Ansible.git
+    ```bash
+    git clone https://github.com/username/Kube-Vagrant-Ansible.git
     cd Kube-Vagrant-Ansible
-    
     ```
     
 2.  Run the `deploy_k8s.py` script with the desired options:
     
-    ```
-    csspython deploy_k8s.py -m 192.168.31.200 -n 2 -b 192.168.31.201
+    ```bash
+    python deploy_k8s.py -m 192.168.31.200 -n 2 -b 192.168.31.201
     
     ```
     
@@ -47,8 +46,8 @@ The script generates an SSH key pair if it does not exist and automatically adds
     
 4.  Access the nodes using SSH with the generated key pair:
     
-    ```
-    cssssh -i ~/.ssh/id_rsa_k8s_vagrant vagrant@192.168.31.200
+    ```bash
+    ssh -i ~/.ssh/id_rsa_k8s_vagrant vagrant@192.168.31.200
     
     ```
     
@@ -61,6 +60,3 @@ You can modify the `Vagrantfile_template` and `ansible_inventory.ini_template` t
 
 Always make sure to update the Python script if you modify the templates or add new placeholders.
 
-## License
-
-This project is released under the [MIT License](https://chat.openai.com/LICENSE).

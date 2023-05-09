@@ -1,36 +1,66 @@
-# Kube-Vagrant-Ansible
+## Kubernetes Cluster Deployment with Vagrant and Ansible
 
-+ This GitHub repository contains an Ansible playbook to deploy a Kubernetes infrastructure on virtual machines managed by Vagrant. It uses Ubuntu 18.04 LTS as its basic operating system and uses Docker and containerd.io to manage containers.
+This repository provides an automated way to deploy a Kubernetes cluster using Vagrant and Ansible. It creates a master node and a specified number of worker nodes, configures the Kubernetes cluster, and sets up secure SSH access.
 
-+ `- Ansible : 2.9.x`
-+ `- Ubuntu : 18.04 LTS`
-+ `- Docker : 19.03.x`
-+ `- containerd.io : 1.3.x`
-+ `- Kubernetes : 1.26.0`
-+ `- kubelet : 1.26.0-00`
-+ `- kubeadm : 1.26.0-00`
-+ `- kubectl : 1.26.0-00`
-+ `- calico : 3.25`
+## Prerequisites
 
-## Prérequis
+Before using this script, ensure you have the following software installed:
 
-+ To use this repository, you must have:
-* - Vagrant
-* - VirtualBox
-* - Ansible
+-   [Vagrant](https://www.vagrantup.com/downloads.html)
+-   [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+-   [Python](https://www.python.org/downloads/)
+-   [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+
+## How it works
+
+The Python script (`deploy_k8s.py`) reads the `Vagrantfile_template` and `ansible_inventory.ini_template` files and generates a `Vagrantfile` and `ansible_inventory.ini` with the specified parameters. It creates a Kubernetes master node and worker nodes with unique IP addresses and deploys the Kubernetes cluster using Ansible playbooks.
+
+The `Vagrantfile_template` contains placeholders for the master node's IP address, the number of worker nodes, and the public key for SSH authentication. The `ansible_inventory.ini_template` contains placeholders for the IP addresses of the master and worker nodes.
+
+The script generates an SSH key pair if it does not exist and automatically adds the public key to the `authorized_keys` file on each node. This allows for passwordless authentication when connecting via SSH.
 
 ## Usage
 
-* 1. Clone the repository
-* 2. Run `vagrant up` to start the virtual machine
-* 3. Run `vagrant ssh` to log in to the virtual machine
-* 4. Run `kubectl get nodes` to verify that the Kubernetes cluster is up and running
+1.  Clone the repository:
+    
+    ```
+    bashgit clone https://github.com/username/Kube-Vagrant-Ansible.git
+    cd Kube-Vagrant-Ansible
+    
+    ```
+    
+2.  Run the `deploy_k8s.py` script with the desired options:
+    
+    ```
+    csspython deploy_k8s.py -m 192.168.31.200 -n 2 -b 192.168.31.201
+    
+    ```
+    
+    This example deploys a Kubernetes cluster with a master node at IP address `192.168.31.200`, two worker nodes, and worker node IP addresses starting from `192.168.31.201`.
+    
+    The available options are:
+    
+    -   `-m` or `--master-ip`: The IP address for the master node (default: `192.168.31.200`).
+    -   `-n` or `--num-nodes`: The number of worker nodes (default: `2`).
+    -   `-b` or `--base-ip`: The base IP address for worker nodes (default: `192.168.31.201`).
+3.  Wait for the deployment to complete. The script will set up the nodes and configure the Kubernetes cluster using Ansible.
+    
+4.  Access the nodes using SSH with the generated key pair:
+    
+    ```
+    cssssh -i ~/.ssh/id_rsa_k8s_vagrant vagrant@192.168.31.200
+    
+    ```
+    
+    Replace `192.168.31.200` with the IP address of the node you want to access.
+    
 
-## Provisioning
-* The provisioning process is handled by Ansible playbooks. These playbooks will install the necessary packages and configure the virtual machine to run as a Kubernetes node.
+## Customization
 
-## Cleanup
-* To stop and delete the virtual machine, run `vagrant destroy`
+You can modify the `Vagrantfile_template` and `ansible_inventory.ini_template` to customize the deployment. For example, you can change the memory and CPU settings for the nodes, or adjust the network settings.
 
+Always make sure to update the Python script if you modify the templates or add new placeholders.
 
+## License
 
+This project is released under the [MIT License](https://chat.openai.com/LICENSE).

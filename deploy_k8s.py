@@ -52,6 +52,15 @@ ansible_inventory = ansible_inventory_template.format(MASTER_IP=MASTER_IP, NODES
 with open('ansible_inventory.ini', 'w') as f:
     f.write(ansible_inventory)
 
+with open("vars.yml", "r") as f:
+    content = f.read()
+
+content = content.replace("master_ip: \"192.168.31.200\"", f"master_ip: \"{MASTER_IP}\"")
+
+
+with open("vars.yml", "w") as f:
+    f.write(content)
+
 # Run Vagrant
 subprocess.run(["vagrant", "up"])
 

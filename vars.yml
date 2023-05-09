@@ -1,5 +1,5 @@
 pod_network_cidr: "176.16.0.0/16"
-k8s_master_ip: "192.168.31.200"
+master_ip: "192.168.31.230"
 pod_network_tigera_file: "https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/tigera-operator.yaml"
 ansible_user: "vagrant"
 pod_network_calico_file: "https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/custom-resources.yaml"

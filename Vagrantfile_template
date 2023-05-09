@@ -1,0 +1,41 @@
+IMAGE_NAME = "{IMAGE_NAME}"
+N = {N}
+MASTER_IP = "{MASTER_IP}"
+PUBLIC_KEY = "{PUBLIC_KEY}"
+
+Vagrant.configure("2") do |config|
+    config.ssh.insert_key = false
+    config.ssh.private_key_path = ["~/.ssh/id_rsa_k8s_vagrant", "~/.vagrant.d/insecure_private_key"]
+
+    config.vm.define "k8s-master" do |master|
+        master.vm.box = IMAGE_NAME
+        master.vm.network "public_network", bridge: "enp59s0", ip: MASTER_IP
+        master.vm.hostname = "k8s-master"
+        master.vm.provider "virtualbox" do |v|
+            v.memory = 4096
+            v.cpus = 2
+        end
+        master.vm.provision "shell", inline: <<-SHELL
+            echo '#{PUBLIC_KEY}' >> /home/vagrant/.ssh/authorized_keys
+            chown vagrant:vagrant /home/vagrant/.ssh/authorized_keys
+            chmod 600 /home/vagrant/.ssh/authorized_keys
+        SHELL
+    end
+
+    (1..N).each do |i|
+        config.vm.define "node-#{{i}}" do |node|
+            node.vm.box = IMAGE_NAME
+            node.vm.network "public_network", bridge: "enp59s0", ip: "192.168.31.#{{201 + i}}"
+            node.vm.hostname = "node-#{{i}}"
+            node.vm.provider "virtualbox" do |v|
+                v.memory = 2048
+                v.cpus = 2
+            end
+            node.vm.provision "shell", inline: <<-SHELL
+                echo '#{PUBLIC_KEY}' >> /home/vagrant/.ssh/authorized_keys
+                chown vagrant:vagrant /home/vagrant/.ssh/authorized_keys
+                chmod 600 /home/vagrant/.ssh/authorized_keys
+            SHELL
+        end
+    end
+end
